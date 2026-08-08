@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>おてつだい給与アプリ（こども用）</title>
+
+<!-- ホーム画面追加時にアプリらしく開くための設定 -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="おてつだい（こども）">
+<meta name="theme-color" content="#232A3B">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=Zen+Maru+Gothic:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#F7F1E3;
+    --paper-deep:#EFE6D2;
+    --ink:#232A3B;
+    --ink-soft:#5B6480;
+    --amber:#F2A93B;
+    --amber-deep:#D98A1F;
+    --teal:#2E9C8F;
+    --teal-deep:#1F7267;
+    --coral:#E4674F;
+    --coral-deep:#BE4E3B;
+    --line: rgba(35,42,59,0.16);
+    --font-display:'Kaisei Decol', serif;
+    --font-body:'Zen Maru Gothic', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:transparent;}
+  .app{
+    font-family:var(--font-body);
+    color:var(--ink);
+    max-width:460px;
+    margin:0 auto;
+    padding:18px 16px 40px;
+  }
+
+  /* ---------- header ---------- */
+  .header{ text-align:center; margin-bottom:14px; }
+  .header .eyebrow{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:0.18em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  .header h1{
+    font-family:var(--font-display);
+    font-size:26px;
+    margin:4px 0 0;
+    color:var(--ink);
+  }
+  .header h1 .kyu{ color:var(--amber-deep); }
+
+  /* ---------- tab switch ---------- */
+  .tabs{
+    display:flex;
+    background:var(--paper-deep);
+    border:2px solid var(--ink);
+    border-radius:999px;
+    padding:4px;
+    margin:16px 0 14px;
+    position:relative;
+  }
+  .tabs button{
+    flex:1;
+    border:none;
+    background:transparent;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:14px;
+    padding:9px 6px;
+    border-radius:999px;
+    cursor:pointer;
+    color:var(--ink-soft);
+    transition:color .2s ease;
+    position:relative;
+    z-index:2;
+  }
+  .tabs button.active{ color:#fff; }
+  .tabs .thumb{
+    position:absolute;
+    top:4px; bottom:4px; left:4px;
+    width:calc(50% - 4px);
+    background:var(--ink);
+    border-radius:999px;
+    transition:transform .25s cubic-bezier(.4,0,.2,1);
+    z-index:1;
+  }
+  .tabs.parent .thumb{ transform:translateX(100%); }
+
+  /* ---------- child switcher (child mode) ---------- */
+  .child-switch{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:2px;
+    margin-bottom:16px;
+  }
+  .child-chip{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:13px;
+    background:#fff;
+    border:2px solid var(--ink);
+    border-radius:999px;
+    padding:7px 14px 7px 8px;
+    cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .child-chip .emoji{
+    font-size:16px;
+    width:24px; height:24px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--paper-deep);
+    border-radius:50%;
+  }
+  .child-chip.active{
+    background:var(--ink);
+    color:#fff;
+  }
+  .child-chip.active .emoji{ background:var(--amber); }
+
+  /* ---------- balance card ---------- */
+  .balance-card{
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:18px;
+    padding:20px 20px 18px;
+    margin-bottom:18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .balance-card::after{
+    content:"";
+    position:absolute;
+    right:-30px; top:-30px;
+    width:110px; height:110px;
+    background:var(--amber);
+    opacity:.18;
+    border-radius:50%;
+  }
+  .balance-card .label{
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    opacity:.7;
+  }
+  .balance-card .amount{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:38px;
+    margin-top:6px;
+    display:flex;
+    align-items:baseline;
+    gap:4px;
+  }
+  .balance-card .amount span{ font-size:18px; opacity:.75; }
+  .balance-card .sub{ font-size:12px; margin-top:8px; opacity:.8; }
+  .payout-btn{
+    margin-top:14px;
+    width:100%;
+    background:var(--amber);
+    color:var(--ink);
+    border:none;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:13px;
+    padding:10px;
+    border-radius:10px;
+    cursor:pointer;
+  }
+  .payout-btn:disabled{ opacity:.35; cursor:not-allowed; }
+
+  /* ---------- per-child compact balance rows (parent mode) ---------- */
+  .child-balance-card{
+    background:#fff;
+    border:2px solid var(--ink);
+    border-radius:14px;
+    padding:12px 14px;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .child-balance-card .cb-emoji{
+    font-size:20px;
+    width:36px; height:36px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--paper-deep);
+    border-radius:50%;
+    flex:0 0 auto;
+  }
+  .child-balance-card .cb-info{ flex:1; }
+  .child-balance-card .cb-name{ font-weight:700; font-size:13px; }
+  .child-balance-card .cb-amount{
+    font-family:var(--font-mono);
+    font-weight:700;
+    color:var(--teal-deep);
+    font-size:17px;
+  }
+  .child-balance-card .btn{ flex:0 0 auto; }
+
+  /* ---------- section titles ---------- */
+  .section-title{
+    font-family:var(--font-display);
+    font-size:16px;
+    margin:22px 0 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-title .count{
+    font-family:var(--font-mono);
+    font-size:11px;
+    background:var(--ink);
+    color:var(--paper);
+    padding:2px 8px;
+    border-radius:999px;
+  }
+  .section-hint{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin:-4px 0 12px;
+  }
+
+  /* ---------- chore grid (child mode) ---------- */
+  .chore-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .chore-card{
+    background:#fff;
+    border:2px solid var(--ink);
+    border-radius:14px;
+    padding:14px 12px;
+    cursor:pointer;
+    text-align:left;
+    font-family:var(--font-body);
+    transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow:3px 3px 0 var(--ink);
+  }
+  .chore-card:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink); }
+  .chore-card .emoji{ font-size:26px; }
+  .chore-card .name{ font-weight:700; font-size:14px; margin-top:6px; line-height:1.3; }
+  .chore-card .amount{ font-family:var(--font-mono); color:var(--teal-deep); font-weight:700; font-size:13px; margin-top:4px; }
+  .chore-card.free-card{ background:var(--paper-deep); border-style:dashed; box-shadow:none; }
+
+  .empty{
+    border:2px dashed var(--line);
+    border-radius:14px;
+    padding:22px 16px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+  }
+
+  /* ---------- receipt / payslip ---------- */
+  .receipt{
+    background:#fff;
+    border:2px solid var(--ink);
+    border-radius:10px;
+    padding:14px 16px 16px;
+    margin-bottom:14px;
+    position:relative;
+    font-family:var(--font-mono);
+    box-shadow:3px 3px 0 var(--line);
+  }
+  .receipt::before, .receipt::after{
+    content:"";
+    position:absolute;
+    left:0; right:0;
+    height:10px;
+    background: radial-gradient(circle at 8px 5px, transparent 5px, var(--paper) 5.5px) repeat-x;
+    background-size:16px 10px;
+  }
+  .receipt::before{ top:-6px; }
+  .receipt::after{ bottom:-6px; transform:rotate(180deg); }
+  .receipt .who-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:11px;
+    background:var(--paper-deep);
+    color:var(--ink-soft);
+    padding:3px 9px;
+    border-radius:999px;
+    margin-bottom:8px;
+  }
+  .receipt .top-row{ display:flex; justify-content:space-between; align-items:flex-start; font-family:var(--font-body); }
+  .receipt .r-name{ font-weight:700; font-size:15px; }
+  .receipt .r-emoji{ font-size:20px; margin-right:6px; }
+  .receipt .r-date{ font-size:10px; color:var(--ink-soft); margin-top:2px; }
+  .receipt .r-amount{ font-size:18px; font-weight:700; }
+  .receipt .dashed{ border-top:1px dashed var(--line); margin:10px 0; }
+  .receipt .status-row{ display:flex; justify-content:space-between; align-items:center; }
+  .stamp{
+    font-family:var(--font-body);
+    font-weight:900;
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:999px;
+    border:2px solid currentColor;
+    transform:rotate(-4deg);
+    display:inline-block;
+    letter-spacing:.02em;
+  }
+  .stamp.pending{ color:var(--amber-deep); }
+  .stamp.approved{ color:var(--teal-deep); }
+  .stamp.rejected{ color:var(--coral-deep); }
+  .r-note{
+    font-family:var(--font-body);
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-top:8px;
+    background:var(--paper-deep);
+    padding:6px 10px;
+    border-radius:8px;
+  }
+
+  .approve-row{ display:flex; gap:8px; margin-top:12px; font-family:var(--font-body); }
+  .approve-row input{
+    width:84px;
+    font-family:var(--font-mono);
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:13px;
+  }
+  .btn{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:12px;
+    border-radius:8px;
+    border:2px solid var(--ink);
+    padding:7px 12px;
+    cursor:pointer;
+    background:#fff;
+  }
+  .btn.ok{ background:var(--teal); color:#fff; border-color:var(--teal-deep); }
+  .btn.no{ background:var(--coral); color:#fff; border-color:var(--coral-deep); }
+  .btn.flex{ flex:1; }
+  .btn.ghost{ background:transparent; }
+
+  .note-input{
+    width:100%;
+    font-family:var(--font-body);
+    font-size:12px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 8px;
+    margin-top:8px;
+    resize:none;
+  }
+
+  /* ---------- manage children (parent) ---------- */
+  .manage-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:10px 12px;
+    margin-bottom:8px;
+  }
+  .manage-row select{
+    font-size:16px;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:6px;
+    background:#fff;
+    flex:0 0 auto;
+  }
+  .manage-row .child-name-input{
+    flex:1;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:13px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:7px 9px;
+  }
+  .manage-row .del{ border:none; background:transparent; color:var(--coral-deep); font-size:16px; cursor:pointer; flex:0 0 auto; }
+
+  .add-child-row{ display:flex; gap:8px; margin-top:4px; }
+  .add-child-row input[type="text"]{
+    flex:1;
+    font-family:var(--font-body);
+    font-size:13px;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:8px 10px;
+  }
+  .add-child-row select{
+    font-size:16px;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:6px 4px;
+    background:#fff;
+  }
+  .add-child-row button, .add-chore-form button{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:0 14px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  /* ---------- manage chores + per-child prices (parent) ---------- */
+  .chore-manage{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; }
+  .chore-manage-head{ display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .chore-manage-head .emoji{ font-size:20px; }
+  .chore-manage-head .n{ font-weight:700; font-size:13px; flex:1; }
+  .chore-manage-head .del{ border:none; background:transparent; color:var(--coral-deep); font-size:16px; cursor:pointer; }
+  .chore-manage-prices{ display:flex; flex-wrap:wrap; gap:8px; }
+  .price-cell{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--paper-deep);
+    border-radius:10px;
+    padding:6px 8px;
+  }
+  .price-cell .c-emoji{ font-size:15px; }
+  .price-cell .c-name{ font-size:11px; color:var(--ink-soft); font-family:var(--font-body); font-weight:700; white-space:nowrap; }
+  .price-cell input{
+    width:64px;
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:12px;
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:4px 6px;
+    color:var(--teal-deep);
+  }
+
+  .add-chore-form{
+    background:var(--paper-deep);
+    border-radius:12px;
+    padding:12px;
+    margin-top:10px;
+  }
+  .add-chore-row1{ display:flex; gap:8px; margin-bottom:10px; }
+  .add-chore-row1 input[type="text"]{
+    flex:1;
+    font-family:var(--font-body);
+    font-size:13px;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:8px 10px;
+  }
+  .add-chore-row1 select{
+    font-size:16px;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:6px 4px;
+    background:#fff;
+  }
+  .add-chore-prices{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .add-chore-form > button{ width:100%; padding:9px; }
+
+  .history-item{
+    display:flex;
+    justify-content:space-between;
+    font-family:var(--font-mono);
+    font-size:12px;
+    padding:6px 0;
+    border-bottom:1px dashed var(--line);
+    color:var(--ink-soft);
+  }
+  .history-item .h-who{ color:var(--ink); font-weight:700; margin-right:4px; }
+
+  /* ---------- modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(35,42,59,0.55);
+    display:flex; align-items:flex-end; justify-content:center;
+    z-index:50;
+    animation:fadeIn .18s ease;
+  }
+  @keyframes fadeIn{ from{opacity:0;} to{opacity:1;} }
+  .modal{
+    background:var(--paper);
+    width:100%; max-width:460px;
+    border-radius:20px 20px 0 0;
+    padding:22px 20px 26px;
+    animation:slideUp .22s cubic-bezier(.3,.8,.4,1);
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  @keyframes slideUp{ from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;} }
+  .modal .emoji-big{ font-size:40px; text-align:center; }
+  .modal h3{ font-family:var(--font-display); text-align:center; margin:6px 0 2px; font-size:19px; }
+  .modal .who-line{ text-align:center; font-size:12px; color:var(--ink-soft); margin-bottom:6px; }
+  .amt-row{ display:flex; align-items:center; justify-content:center; gap:8px; margin:10px 0 2px; }
+  .amt-input{
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:22px;
+    color:var(--teal-deep);
+    border:2px solid var(--ink);
+    border-radius:10px;
+    padding:6px 10px;
+    width:120px;
+    text-align:right;
+  }
+  .amt-yen{ font-family:var(--font-mono); font-weight:700; font-size:16px; color:var(--ink-soft); }
+  .amt-hint{ text-align:center; font-size:11px; color:var(--ink-soft); margin-bottom:16px; }
+  .free-field{ margin-bottom:10px; }
+  .free-field label{ display:block; font-size:11px; color:var(--ink-soft); margin-bottom:4px; }
+  .free-field input[type="text"]{
+    width:100%;
+    font-family:var(--font-body);
+    font-size:14px;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:8px 10px;
+  }
+  .free-field select{
+    font-size:18px;
+    border:2px solid var(--ink);
+    border-radius:8px;
+    padding:6px 10px;
+    background:#fff;
+  }
+  .modal .btn-row{ display:flex; gap:10px; }
+
+  .toast{
+    position:fixed;
+    bottom:18px; left:50%;
+    transform:translateX(-50%);
+    background:var(--ink);
+    color:#fff;
+    font-family:var(--font-body);
+    font-size:13px;
+    font-weight:700;
+    padding:10px 18px;
+    border-radius:999px;
+    z-index:60;
+    animation:toastIn .25s ease, toastOut .25s ease 1.8s forwards;
+  }
+  @keyframes toastIn{ from{opacity:0; transform:translateX(-50%) translateY(10px);} to{opacity:1; transform:translateX(-50%) translateY(0);} }
+  @keyframes toastOut{ to{opacity:0; transform:translateX(-50%) translateY(10px);} }
+
+  @media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+
+  /* ---------- kids-build parent lock ---------- */
+  .lock-fab{
+    position:fixed;
+    right:14px;
+    bottom:14px;
+    width:34px; height:34px;
+    border-radius:50%;
+    border:none;
+    background:rgba(35,42,59,0.12);
+    color:var(--ink-soft);
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    z-index:40;
+  }
+  .unlock-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--teal);
+    color:#fff;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:12px;
+    padding:9px 12px;
+    border-radius:10px;
+    margin-bottom:14px;
+  }
+  .unlock-bar button{
+    background:#fff;
+    color:var(--teal-deep);
+    border:none;
+    border-radius:999px;
+    padding:6px 12px;
+    font-weight:700;
+    font-size:11px;
+    cursor:pointer;
+  }
+</style>
+
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <div class="eyebrow">OTETSUDAI PAYROLL CO.</div>
+    <h1>おてつだい<span class="kyu">給与</span>アプリ</h1>
+  </div>
+
+  <div id="unlockBar"></div>
+  <div id="view"></div>
+  <button id="parentUnlockBtn" class="lock-fab" title="保護者モード">🔒</button>
+</div>
+
+<script>
+(function(){
+  const KIDS_BUILD = true;
+  const STORAGE_KEY = 'otetsudai-data';
+
+  const CHILD_EMOJI_CHOICES = ['🦁','🐰','🐻','🐼','🐵','🦊','🐱','🐶','🐸','🦄','🐯','🐨'];
+  const EMOJI_CHOICES = ['🍽️','🛁','🗑️','👕','🐕','🧹','🧺','🪟','🛏️','🌱','🚗','📚','🐱','🧽','🧦'];
+
+  const DEFAULT_CHILDREN = [
+    {id:'k1', name:'こども1', emoji:'🦁'},
+    {id:'k2', name:'こども2', emoji:'🐰'},
+    {id:'k3', name:'こども3', emoji:'🐻'},
+  ];
+  const DEFAULT_CHORES = [
+    {id:'c1', emoji:'🍽️', name:'お皿あらい', amounts:{k1:50, k2:50, k3:50}},
+    {id:'c2', emoji:'🛁', name:'お風呂そうじ', amounts:{k1:100, k2:100, k3:100}},
+    {id:'c3', emoji:'🗑️', name:'ゴミ出し', amounts:{k1:30, k2:30, k3:30}},
+    {id:'c4', emoji:'👕', name:'せんたくものたたみ', amounts:{k1:50, k2:50, k3:50}},
+    {id:'c5', emoji:'🐕', name:'犬のさんぽ', amounts:{k1:80, k2:80, k3:80}},
+  ];
+
+  let state = { children: DEFAULT_CHILDREN.slice(), chores: DEFAULT_CHORES.slice(), requests: [], payouts: [], parentPin: null };
+  let mode = 'child';
+  let selectedChildId = null;
+  let loaded = false;
+
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+  function yen(n){ return '¥' + Number(n||0).toLocaleString('ja-JP'); }
+  function fmtDate(ts){
+    const d = new Date(ts);
+    return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function getChild(id){ return state.children.find(c=>c.id===id); }
+  function choreAmountFor(chore, childId){
+    return (chore.amounts && chore.amounts[childId] != null) ? chore.amounts[childId] : 0;
+  }
+
+  // Claude上で開いたときはwindow.storageを使い、ホーム画面から単独で開いたとき
+  // (window.storageが無い環境)はブラウザのlocalStorageに保存する。
+  function hasCloudStorage(){
+    return typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+  }
+  async function storageGet(key){
+    if(hasCloudStorage()){
+      try{ return await window.storage.get(key); }catch(e){ return null; }
+    }
+    try{
+      const v = localStorage.getItem(key);
+      return v != null ? {key, value:v} : null;
+    }catch(e){ return null; }
+  }
+  async function storageSet(key, value){
+    if(hasCloudStorage()){
+      try{ return await window.storage.set(key, value); }catch(e){ return null; }
+    }
+    try{ localStorage.setItem(key, value); return {key, value}; }catch(e){ return null; }
+  }
+
+  async function save(){
+    try{ await storageSet(STORAGE_KEY, JSON.stringify(state)); }
+    catch(e){ console.error('save failed', e); }
+  }
+
+  async function load(){
+    try{
+      const res = await storageGet(STORAGE_KEY);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        state = Object.assign({children:DEFAULT_CHILDREN.slice(), chores:DEFAULT_CHORES.slice(), requests:[], payouts:[], parentPin:null}, parsed);
+        if(!state.children || state.children.length===0) state.children = DEFAULT_CHILDREN.slice();
+      }
+    }catch(e){ /* first run, keep defaults */ }
+    selectedChildId = state.children[0].id;
+    loaded = true;
+    render();
+  }
+
+  function balanceFor(childId){
+    const earned = state.requests.filter(r=>r.status==='approved' && r.childId===childId).reduce((s,r)=>s+r.amount,0);
+    const paid = state.payouts.filter(p=>p.childId===childId).reduce((s,p)=>s+p.amount,0);
+    return Math.max(0, earned - paid);
+  }
+
+  function toast(msg){
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 2100);
+  }
+
+  function closeModal(){
+    const ov = document.querySelector('.overlay');
+    if(ov) ov.remove();
+  }
+
+  function openConfirmModal(chore){
+    const child = getChild(selectedChildId);
+    const amount = choreAmountFor(chore, selectedChildId);
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML = `
+      <div class="modal">
+        <div class="emoji-big">${chore.emoji}</div>
+        <h3>${escapeHtml(chore.name)}</h3>
+        <div class="who-line">${child.emoji} ${escapeHtml(child.name)} が申請するよ</div>
+        <div class="amt-row">
+          <input type="number" min="0" step="10" class="amt-input" id="reqAmount" value="${amount}">
+          <span class="amt-yen">円</span>
+        </div>
+        <div class="amt-hint">きんがくは自由に変えられるよ</div>
+        <div class="btn-row">
+          <button class="btn ghost flex" id="cancelReq">やめる</button>
+          <button class="btn ok flex" id="confirmReq">申請する！</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', (e)=>{ if(e.target===ov) closeModal(); });
+    ov.querySelector('#cancelReq').onclick = closeModal;
+    ov.querySelector('#confirmReq').onclick = async ()=>{
+      const amt = Math.max(0, Number(ov.querySelector('#reqAmount').value) || 0);
+      state.requests.unshift({
+        id: uid(),
+        childId: child.id,
+        childName: child.name,
+        childEmoji: child.emoji,
+        choreId: chore.id,
+        choreName: chore.name,
+        emoji: chore.emoji,
+        amount: amt,
+        status: 'pending',
+        requestedAt: Date.now(),
+        respondedAt: null,
+        note: ''
+      });
+      await save();
+      closeModal();
+      toast('申請したよ！おうちの人にとどいたよ 📮');
+      render();
+    };
+  }
+
+  function openFreeRequestModal(){
+    const child = getChild(selectedChildId);
+    const ov = document.createElement('div');
+    ov.className = 'overlay';
+    ov.innerHTML = `
+      <div class="modal">
+        <div class="emoji-big">✏️</div>
+        <h3>じぶんで申請をつくる</h3>
+        <div class="who-line">${child.emoji} ${escapeHtml(child.name)} が申請するよ</div>
+        <div class="free-field">
+          <label>やったこと</label>
+          <input type="text" id="freeName" placeholder="れい：庭のそうじ" maxlength="30">
+        </div>
+        <div class="free-field">
+          <label>絵文字（すきなもの）</label>
+          <select id="freeEmoji">${EMOJI_CHOICES.map(e=>`<option value="${e}">${e}</option>`).join('')}<option value="⭐">⭐</option></select>
+        </div>
+        <div class="amt-row">
+          <input type="number" min="0" step="10" class="amt-input" id="freeAmount" placeholder="0">
+          <span class="amt-yen">円</span>
+        </div>
+        <div class="amt-hint">きんがくは自由に決めていいよ</div>
+        <div class="btn-row">
+          <button class="btn ghost flex" id="cancelFree">やめる</button>
+          <button class="btn ok flex" id="confirmFree">申請する！</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', (e)=>{ if(e.target===ov) closeModal(); });
+    ov.querySelector('#cancelFree').onclick = closeModal;
+    ov.querySelector('#confirmFree').onclick = async ()=>{
+      const name = ov.querySelector('#freeName').value.trim();
+      const emoji = ov.querySelector('#freeEmoji').value;
+      const amount = Math.max(0, Number(ov.querySelector('#freeAmount').value) || 0);
+      if(!name){ toast('やったことを入力してね'); return; }
+      state.requests.unshift({
+        id: uid(),
+        childId: child.id,
+        childName: child.name,
+        childEmoji: child.emoji,
+        choreId: 'free',
+        choreName: name,
+        emoji: emoji,
+        amount: amount,
+        status: 'pending',
+        requestedAt: Date.now(),
+        respondedAt: null,
+        note: ''
+      });
+      await save();
+      closeModal();
+      toast('申請したよ！おうちの人にとどいたよ 📮');
+      render();
+    };
+  }
+
+  function childView(){
+    if(!getChild(selectedChildId)) selectedChildId = state.children[0].id;
+    const child = getChild(selectedChildId);
+    const bal = balanceFor(child.id);
+    const myRequests = state.requests.filter(r=>r.childId===child.id);
+    const pendingCount = myRequests.filter(r=>r.status==='pending').length;
+
+    const switchHtml = `<div class="child-switch">` + state.children.map(ch=>`
+      <button class="child-chip ${ch.id===child.id?'active':''}" data-child="${ch.id}">
+        <span class="emoji">${ch.emoji}</span>${escapeHtml(ch.name)}
+      </button>`).join('') + `</div>`;
+
+    const presetHtml = state.chores.map(c => `
+        <button class="chore-card" data-chore="${c.id}">
+          <div class="emoji">${c.emoji}</div>
+          <div class="name">${escapeHtml(c.name)}</div>
+          <div class="amount">${yen(choreAmountFor(c, child.id))}</div>
+        </button>`).join('');
+    const freeCardHtml = `
+        <button class="chore-card free-card" id="freeRequestBtn">
+          <div class="emoji">✏️</div>
+          <div class="name">じぶんで申請をつくる</div>
+          <div class="amount">きんがく自由</div>
+        </button>`;
+    let choresHtml = `<div class="chore-grid">${presetHtml}${freeCardHtml}</div>`;
+    if(state.chores.length === 0){
+      choresHtml = `<div class="empty" style="margin-bottom:10px;">お手伝いリストはまだありません。<br>「じぶんで申請をつくる」から自由に申請できるよ。</div>` + choresHtml;
+    }
+
+    let historyHtml = '';
+    if(myRequests.length === 0){
+      historyHtml = `<div class="empty">まだ申請していません。<br>お手伝いをして申請してみよう！</div>`;
+    }else{
+      historyHtml = myRequests.slice(0,12).map(r => receiptHtml(r, false)).join('');
+    }
+
+    return `
+      ${switchHtml}
+      <div class="balance-card">
+        <div class="label">${escapeHtml(child.name)}の みとめられたきゅうりょう</div>
+        <div class="amount">${yen(bal).replace('¥','')}<span>円</span></div>
+        <div class="sub">${pendingCount>0 ? `かくにんまち：${pendingCount}けん` : 'かくにんまちの申請はありません'}</div>
+      </div>
+
+      <div class="section-title">おてつだいをえらぶ</div>
+      ${choresHtml}
+
+      <div class="section-title">申請のきろく <span class="count">${myRequests.length}</span></div>
+      ${historyHtml}
+    `;
+  }
+
+  function receiptHtml(r, showWho){
+    let stampHtml = '';
+    if(r.status === 'pending') stampHtml = `<span class="stamp pending">⏳ かくにんちゅう</span>`;
+    else if(r.status === 'approved') stampHtml = `<span class="stamp approved">OK! みとめられた</span>`;
+    else stampHtml = `<span class="stamp rejected">また今度</span>`;
+
+    let noteHtml = r.note ? `<div class="r-note">💬 ${escapeHtml(r.note)}</div>` : '';
+    let whoHtml = showWho ? `<div class="who-badge">${r.childEmoji||''} ${escapeHtml(r.childName||'')}</div>` : '';
+
+    let actionsHtml = '';
+    if(showWho && r.status === 'pending'){
+      actionsHtml = `
+        <div class="approve-row">
+          <input type="number" min="0" value="${r.amount}" id="amt-${r.id}">
+          <button class="btn ok flex" data-approve="${r.id}">みとめる</button>
+        </div>
+        <div class="approve-row">
+          <textarea class="note-input" rows="1" placeholder="ひとこと（にんかしないとき・にんかするときも）" id="note-${r.id}"></textarea>
+        </div>
+        <div class="approve-row">
+          <button class="btn no flex" data-reject="${r.id}">今回はナシにする</button>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="receipt">
+        ${whoHtml}
+        <div class="top-row">
+          <div>
+            <div class="r-name"><span class="r-emoji">${r.emoji}</span>${escapeHtml(r.choreName)}</div>
+            <div class="r-date">申請 ${fmtDate(r.requestedAt)}</div>
+          </div>
+          <div class="r-amount">${yen(r.amount)}</div>
+        </div>
+        <div class="dashed"></div>
+        <div class="status-row">
+          ${stampHtml}
+          ${r.respondedAt ? `<div class="r-date">対応 ${fmtDate(r.respondedAt)}</div>` : ''}
+        </div>
+        ${noteHtml}
+        ${actionsHtml}
+      </div>
+    `;
+  }
+
+  function parentView(){
+    const pending = state.requests.filter(r=>r.status==='pending');
+    const others = state.requests.filter(r=>r.status!=='pending').slice(0,12);
+
+    const balancesHtml = state.children.map(ch => `
+      <div class="child-balance-card">
+        <div class="cb-emoji">${ch.emoji}</div>
+        <div class="cb-info">
+          <div class="cb-name">${escapeHtml(ch.name)}</div>
+          <div class="cb-amount">${yen(balanceFor(ch.id))}</div>
+        </div>
+        <button class="btn ok" data-payout="${ch.id}" ${balanceFor(ch.id)<=0 ? 'disabled':''}>支払った</button>
+      </div>`).join('');
+
+    const choreManageHtml = state.chores.length === 0 ? `<div class="empty">まだ登録がありません。下から追加してください。</div>` :
+      state.chores.map(c => `
+        <div class="chore-manage">
+          <div class="chore-manage-head">
+            <span class="emoji">${c.emoji}</span>
+            <span class="n">${escapeHtml(c.name)}</span>
+            <button class="del" data-delchore="${c.id}">✕</button>
+          </div>
+          <div class="chore-manage-prices">
+            ${state.children.map(ch => `
+              <div class="price-cell">
+                <span class="c-emoji">${ch.emoji}</span>
+                <span class="c-name">${escapeHtml(ch.name)}</span>
+                <input type="number" min="0" step="10" value="${choreAmountFor(c, ch.id)}" data-choreprice="${c.id}" data-child="${ch.id}">
+              </div>`).join('')}
+          </div>
+        </div>`).join('');
+
+    const childManageHtml = state.children.map(ch => `
+      <div class="manage-row">
+        <select data-childemoji="${ch.id}">
+          ${CHILD_EMOJI_CHOICES.map(e=>`<option value="${e}" ${e===ch.emoji?'selected':''}>${e}</option>`).join('')}
+        </select>
+        <input type="text" class="child-name-input" data-childname="${ch.id}" value="${escapeHtml(ch.name)}">
+        <button class="del" data-delchild="${ch.id}" ${state.children.length<=1?'disabled':''}>✕</button>
+      </div>`).join('');
+
+    return `
+      <div class="section-title">きゅうりょうの支払い</div>
+      ${balancesHtml}
+      <div class="section-hint">現金などで渡したら「支払った」でその子の残高をリセット</div>
+
+      <div class="section-title">申請の確認 <span class="count">${pending.length}</span></div>
+      ${pending.length === 0 ? `<div class="empty">今は申請がありません。</div>` : pending.map(r=>receiptHtml(r,true)).join('')}
+
+      <div class="section-title">こどもの管理</div>
+      ${childManageHtml}
+      <div class="add-child-row">
+        <select id="newChildEmoji">${CHILD_EMOJI_CHOICES.map(e=>`<option value="${e}">${e}</option>`).join('')}</select>
+        <input type="text" id="newChildName" placeholder="なまえ">
+        <button id="addChildBtn">追加</button>
+      </div>
+
+      <div class="section-title">お手伝いリストと値段の管理</div>
+      <div class="section-hint">同じお手伝いでも、こどもごとに金額を変えられます</div>
+      ${choreManageHtml}
+      <div class="add-chore-form">
+        <div class="add-chore-row1">
+          <select id="newEmoji">${EMOJI_CHOICES.map(e=>`<option value="${e}">${e}</option>`).join('')}</select>
+          <input type="text" id="newName" placeholder="お手伝いの名前">
+        </div>
+        <div class="add-chore-prices">
+          ${state.children.map(ch => `
+            <div class="price-cell">
+              <span class="c-emoji">${ch.emoji}</span>
+              <span class="c-name">${escapeHtml(ch.name)}</span>
+              <input type="number" min="0" step="10" placeholder="円" id="newAmt-${ch.id}">
+            </div>`).join('')}
+        </div>
+        <button id="addChoreBtn">追加</button>
+      </div>
+
+      <div class="section-title">これまでの記録</div>
+      ${others.length === 0 && state.payouts.length === 0 ? `<div class="empty">記録はまだありません。</div>` : ''}
+      ${others.map(r=>`<div class="history-item"><span><span class="h-who">${r.childEmoji||''}${escapeHtml(r.childName||'')}</span>${r.status==='approved'?'✓':'✕'} ${escapeHtml(r.choreName)}</span><span>${yen(r.amount)}</span></div>`).join('')}
+      ${state.payouts.slice(0,10).map(p=>`<div class="history-item"><span><span class="h-who">${escapeHtml((getChild(p.childId)||{}).name||'')}</span>💴 支払いずみ</span><span>${yen(p.amount)}</span></div>`).join('')}
+    `;
+  }
+
+  function render(){
+    const viewEl = document.getElementById('view');
+    const unlockBarEl = document.getElementById('unlockBar');
+    const lockBtn = document.getElementById('parentUnlockBtn');
+    if(!loaded){
+      viewEl.innerHTML = `<div class="empty">よみこみちゅう…</div>`;
+      return;
+    }
+    viewEl.innerHTML = mode === 'child' ? childView() : parentView();
+
+    if(unlockBarEl){
+      unlockBarEl.innerHTML = (mode === 'parent')
+        ? `<div class="unlock-bar"><span>🔓 保護者モード</span><button id="lockBackBtn">こどもモードにもどる</button></div>`
+        : '';
+      const backBtn = document.getElementById('lockBackBtn');
+      if(backBtn) backBtn.onclick = ()=>{ mode = 'child'; render(); };
+    }
+    if(lockBtn) lockBtn.style.display = (mode === 'parent') ? 'none' : 'flex';
+
+    attachHandlers();
+  }
+
+  async function requestParentUnlock(){
+    if(!state.parentPin){
+      const p1 = prompt('保護者モードの暗証番号を設定します（4桁以上の数字）。\nこの番号は後で保護者モードに入るときに必要です。');
+      if(!p1) return;
+      const p2 = prompt('確認のため、もう一度同じ番号を入力してください');
+      if(p1 !== p2){ toast('番号が一致しませんでした。もう一度お試しください。'); return; }
+      state.parentPin = p1;
+      await save();
+      toast('暗証番号を設定しました');
+      mode = 'parent';
+      render();
+    }else{
+      const p = prompt('保護者モードの暗証番号を入力してください');
+      if(p === null) return;
+      if(p === state.parentPin){
+        mode = 'parent';
+        render();
+      }else{
+        toast('暗証番号が違います');
+      }
+    }
+  }
+  document.getElementById('parentUnlockBtn').onclick = requestParentUnlock;
+
+  function attachHandlers(){
+    if(mode === 'child'){
+      document.querySelectorAll('[data-child]').forEach(btn=>{
+        btn.onclick = ()=>{
+          selectedChildId = btn.dataset.child;
+          render();
+        };
+      });
+      document.querySelectorAll('[data-chore]').forEach(btn=>{
+        btn.onclick = ()=>{
+          const chore = state.chores.find(c=>c.id===btn.dataset.chore);
+          if(chore) openConfirmModal(chore);
+        };
+      });
+      const freeBtn = document.getElementById('freeRequestBtn');
+      if(freeBtn) freeBtn.onclick = openFreeRequestModal;
+    }else{
+      document.querySelectorAll('[data-approve]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          const id = btn.dataset.approve;
+          const req = state.requests.find(r=>r.id===id);
+          if(!req) return;
+          const amtInput = document.getElementById('amt-'+id);
+          const noteInput = document.getElementById('note-'+id);
+          req.amount = amtInput ? (Number(amtInput.value) || req.amount) : req.amount;
+          req.status = 'approved';
+          req.respondedAt = Date.now();
+          req.note = noteInput ? noteInput.value.trim() : '';
+          await save();
+          toast('みとめました ✓');
+          render();
+        };
+      });
+      document.querySelectorAll('[data-reject]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          const id = btn.dataset.reject;
+          const req = state.requests.find(r=>r.id===id);
+          if(!req) return;
+          const noteInput = document.getElementById('note-'+id);
+          req.status = 'rejected';
+          req.respondedAt = Date.now();
+          req.note = noteInput ? noteInput.value.trim() : '';
+          await save();
+          toast('今回はナシにしました');
+          render();
+        };
+      });
+
+      // per-child chore price editing
+      document.querySelectorAll('[data-choreprice]').forEach(inp=>{
+        inp.onchange = async ()=>{
+          const chore = state.chores.find(c=>c.id===inp.dataset.choreprice);
+          if(!chore) return;
+          if(!chore.amounts) chore.amounts = {};
+          chore.amounts[inp.dataset.child] = Math.max(0, Number(inp.value) || 0);
+          await save();
+          toast('値段を更新しました');
+        };
+      });
+      document.querySelectorAll('[data-delchore]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          state.chores = state.chores.filter(c=>c.id!==btn.dataset.delchore);
+          await save();
+          render();
+        };
+      });
+      const addBtn = document.getElementById('addChoreBtn');
+      if(addBtn){
+        addBtn.onclick = async ()=>{
+          const name = document.getElementById('newName').value.trim();
+          const emoji = document.getElementById('newEmoji').value;
+          if(!name){ toast('お手伝いの名前を入れてください'); return; }
+          const amounts = {};
+          state.children.forEach(ch=>{
+            const el = document.getElementById('newAmt-'+ch.id);
+            amounts[ch.id] = el ? Math.max(0, Number(el.value) || 0) : 0;
+          });
+          state.chores.push({id:uid(), emoji, name, amounts});
+          await save();
+          toast('お手伝いを追加しました');
+          render();
+        };
+      }
+
+      // children management
+      document.querySelectorAll('[data-childname]').forEach(inp=>{
+        inp.onchange = async ()=>{
+          const ch = getChild(inp.dataset.childname);
+          if(!ch) return;
+          const v = inp.value.trim();
+          ch.name = v || ch.name;
+          await save();
+          render();
+        };
+      });
+      document.querySelectorAll('[data-childemoji]').forEach(sel=>{
+        sel.onchange = async ()=>{
+          const ch = getChild(sel.dataset.childemoji);
+          if(!ch) return;
+          ch.emoji = sel.value;
+          await save();
+          render();
+        };
+      });
+      document.querySelectorAll('[data-delchild]').forEach(btn=>{
+        btn.onclick = async ()=>{
+          if(state.children.length<=1) return;
+          const id = btn.dataset.delchild;
+          state.children = state.children.filter(c=>c.id!==id);
+          state.chores.forEach(c=>{ if(c.amounts) delete c.amounts[id]; });
+          if(selectedChildId === id) selectedChildId = state.children[0].id;
+          await save();
+          toast('こどもを削除しました');
+          render();
+        };
+      });
+      const addChildBtn = document.getElementById('addChildBtn');
+      if(addChildBtn){
+        addChildBtn.onclick = async ()=>{
+          const name = document.getElementById('newChildName').value.trim();
+          const emoji = document.getElementById('newChildEmoji').value;
+          if(!name){ toast('なまえを入れてください'); return; }
+          const id = uid();
+          state.children.push({id, name, emoji});
+          state.chores.forEach(c=>{ if(!c.amounts) c.amounts = {}; c.amounts[id] = 0; });
+          await save();
+          toast('こどもを追加しました。値段の設定を忘れずに！');
+          render();
+        };
+      }
+
+      const payoutBtns = document.querySelectorAll('[data-payout]');
+      payoutBtns.forEach(btn=>{
+        btn.onclick = async ()=>{
+          const childId = btn.dataset.payout;
+          const amt = balanceFor(childId);
+          if(amt<=0) return;
+          state.payouts.unshift({id:uid(), childId, amount:amt, date:Date.now()});
+          await save();
+          toast('支払いを記録しました');
+          render();
+        };
+      });
+    }
+  }
+
+  load();
+})();
+</script>
+
+<script>
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    });
+  }
+</script>
+</body>
+</html>
+

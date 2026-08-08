@@ -1,0 +1,15 @@
+{
+  "name": "おてつだい給与（こども用）",
+  "short_name": "おてつだい給与",
+  "description": "こどものお手伝いに給与を申請するアプリ（こども用）",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F1E3",
+  "theme_color": "#232A3B",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
