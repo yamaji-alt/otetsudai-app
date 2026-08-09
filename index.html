@@ -608,6 +608,48 @@
 
 </head>
 <body>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCuJ91dhk0kea3mc7X85kpo2KhxU3g4TYA",
+    authDomain: "otetsudai-family.firebaseapp.com",
+    projectId: "otetsudai-family",
+    storageBucket: "otetsudai-family.firebasestorage.app",
+    messagingSenderId: "58520479209",
+    appId: "1:58520479209:web:80a153049605f5ca18d778"
+  };
+  const FAMILY_ID = "cc5ozvbsjg2xgpnyintxqscy";
+
+  try{
+    const fbApp = initializeApp(firebaseConfig);
+    const db = getFirestore(fbApp);
+    const familyRef = doc(db, "families", FAMILY_ID);
+
+    window.familyCloud = {
+      async load(){
+        const snap = await getDoc(familyRef);
+        return snap.exists() ? snap.data() : null;
+      },
+      async save(dataObj){
+        await setDoc(familyRef, dataObj);
+      },
+      subscribe(callback){
+        return onSnapshot(familyRef, (snap)=>{
+          if(snap.metadata.hasPendingWrites) return; // ignore our own just-saved write
+          if(snap.exists()) callback(snap.data());
+        }, (err)=>{ console.error('firestore subscribe error', err); });
+      }
+    };
+    window.familyCloudReady = true;
+  }catch(e){
+    console.error('firebase init failed', e);
+  }
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
 <div class="app" id="app">
   <div class="header">
     <div class="eyebrow">OTETSUDAI PAYROLL CO.</div>
@@ -659,10 +701,17 @@
     return (chore.amounts && chore.amounts[childId] != null) ? chore.amounts[childId] : 0;
   }
 
-  // Claude上で開いたときはwindow.storageを使い、ホーム画面から単独で開いたとき
-  // (window.storageが無い環境)はブラウザのlocalStorageに保存する。
+  // 優先順位: ①Firebase(全端末共有) ②Claudeのwindow.storage ③ブラウザのlocalStorage
   function hasCloudStorage(){
     return typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+  }
+  function hasFamilyCloud(){
+    return typeof window.familyCloudReady !== 'undefined' && window.familyCloudReady && window.familyCloud;
+  }
+  function mergeDefaults(parsed){
+    const merged = Object.assign({children:DEFAULT_CHILDREN.slice(), chores:DEFAULT_CHORES.slice(), requests:[], payouts:[], parentPin:null}, parsed);
+    if(!merged.children || merged.children.length===0) merged.children = DEFAULT_CHILDREN.slice();
+    return merged;
   }
   async function storageGet(key){
     if(hasCloudStorage()){
@@ -681,22 +730,59 @@
   }
 
   async function save(){
-    try{ await storageSet(STORAGE_KEY, JSON.stringify(state)); }
-    catch(e){ console.error('save failed', e); }
+    try{
+      if(hasFamilyCloud()){
+        await window.familyCloud.save(state);
+      }else{
+        await storageSet(STORAGE_KEY, JSON.stringify(state));
+      }
+    }catch(e){ console.error('save failed', e); }
   }
 
-  async function load(){
+  function applyRemoteState(data){
+    state = mergeDefaults(data);
+    if(!getChild(selectedChildId)) selectedChildId = state.children[0].id;
+    render();
+  }
+
+  async function loadFromFamilyCloud(){
+    try{
+      const cloudData = await window.familyCloud.load();
+      if(cloudData){
+        state = mergeDefaults(cloudData);
+      }else{
+        await window.familyCloud.save(state);
+      }
+      window.familyCloud.subscribe(applyRemoteState);
+    }catch(e){
+      console.error('family cloud load failed, falling back to local', e);
+      await loadFromLocal();
+    }
+  }
+
+  async function loadFromLocal(){
     try{
       const res = await storageGet(STORAGE_KEY);
       if(res && res.value){
-        const parsed = JSON.parse(res.value);
-        state = Object.assign({children:DEFAULT_CHILDREN.slice(), chores:DEFAULT_CHORES.slice(), requests:[], payouts:[], parentPin:null}, parsed);
-        if(!state.children || state.children.length===0) state.children = DEFAULT_CHILDREN.slice();
+        state = mergeDefaults(JSON.parse(res.value));
       }
     }catch(e){ /* first run, keep defaults */ }
+  }
+
+  async function load(){
+    if(hasFamilyCloud()){
+      await loadFromFamilyCloud();
+    }else{
+      await loadFromLocal();
+    }
     selectedChildId = state.children[0].id;
     loaded = true;
     render();
+  }
+
+  function startApp(){
+    if(loaded) return;
+    load();
   }
 
   function balanceFor(childId){
@@ -1193,7 +1279,12 @@
     }
   }
 
-  load();
+  if(window.familyCloudReady){
+    startApp();
+  }else{
+    window.addEventListener('firebase-ready', startApp, {once:true});
+    setTimeout(startApp, 3000); // Firebaseが読み込めない場合もローカル保存で動かす
+  }
 })();
 </script>
 
@@ -1207,4 +1298,3 @@
 </script>
 </body>
 </html>
-
